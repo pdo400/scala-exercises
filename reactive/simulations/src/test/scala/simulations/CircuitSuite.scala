@@ -106,16 +106,12 @@ class CircuitSuite extends CircuitSimulator with FunSuite {
     def addWires(count: Int, acc: List[Wire] = Nil): List[Wire] =
       if (count == 0) acc else addWires(count - 1, new Wire :: acc)
 
-    @tailrec
-    def determineOutputCount(bits: Int, acc: Int = 1): Int =
-      if (bits == 0) acc else determineOutputCount(bits - 1, 2 * acc)
-
     val input = new Wire
 
     for {
-      bits <- 0 to 1
+      bits <- 0 to 8
 
-      outputCount = determineOutputCount(bits)
+      outputCount = 1 << bits
       maxDelay = if (bits == 0) 0 else InverterDelay + bits * AndGateDelay
 
       controls = addWires(bits)
