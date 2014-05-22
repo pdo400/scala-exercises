@@ -29,6 +29,9 @@ class EpidemySimulator extends Simulator {
     val reducedMobilityClean = 2 * standardMobility
     val reducedMobilityVisiblyInfected = 2 * reducedMobilityClean
 
+    val chosenFew = true
+    val chosenFewVaccinationRate = 0.05
+
     val airTraffic = true
     val airTrafficRate = 0.01
   }
@@ -112,6 +115,9 @@ class EpidemySimulator extends Simulator {
 
     if (id % (1 / prevalenceRate).toInt == 0)
       becomeInfected()
+    else if (chosenFew && random < chosenFewVaccinationRate)
+      immune = true
+
     queueMove()
 
     def queueMove() = afterDelay(moveDelay(this)) { move() }
@@ -121,7 +127,7 @@ class EpidemySimulator extends Simulator {
         randomMove(room) match {
           case Some(moveTo) =>
             room = moveTo
-            if (!infected && random < transmissionRate && inhabitants(moveTo).exists(_.infected))
+            if (!infected && !immune && random < transmissionRate && inhabitants(moveTo).exists(_.infected))
               becomeInfected()
           case None =>
         }
