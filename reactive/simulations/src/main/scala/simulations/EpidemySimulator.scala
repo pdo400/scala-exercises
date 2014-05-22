@@ -23,7 +23,11 @@ class EpidemySimulator extends Simulator {
     val toImmuneDelay = 16
     val toHealthyDelay = 18
 
-    val baseMoveDelay = 5
+    val standardMobility = 5
+
+    val reducedMobility = true
+    val reducedMobilityClean = 2 * standardMobility
+    val reducedMobilityVisiblyInfected = 2 * reducedMobilityClean
 
     val airTraffic = true
     val airTrafficRate = 0.01
@@ -35,7 +39,15 @@ class EpidemySimulator extends Simulator {
 
   def inhabitants(room: Room) = persons.view filter { _.room == room }
 
-  def moveDelay(p: Person) = randomBelow(baseMoveDelay) + 1
+  def moveDelay(p: Person) = {
+    val mobility =
+      if (reducedMobility)
+        if (p.visiblyInfectious) reducedMobilityVisiblyInfected else reducedMobilityClean
+      else
+        standardMobility
+
+    randomBelow(mobility) + 1
+  }
 
   def randomMove(room: Room) = {
     if (airTraffic && random < airTrafficRate) {
