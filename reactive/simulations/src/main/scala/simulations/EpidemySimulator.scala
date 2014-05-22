@@ -24,6 +24,9 @@ class EpidemySimulator extends Simulator {
     val toHealthyDelay = 18
 
     val baseMoveDelay = 5
+
+    val airTraffic = true
+    val airTrafficRate = 0.01
   }
 
   import SimConfig._
@@ -34,9 +37,20 @@ class EpidemySimulator extends Simulator {
 
   def moveDelay(p: Person) = randomBelow(baseMoveDelay) + 1
 
+  def randomMove(room: Room) = {
+    if (airTraffic && random < airTrafficRate) {
+      Some(Room.random)
+    } else {
+      val potential = Room.getConnected(room) .
+        view . filter { inhabitants(_) forall { !_.visiblyInfectious } }
+      val size = potential.size
+      if (size == 0) None else Some(potential(randomBelow(size)))
+    }
+  }
+
   object Room {
     private[this] val rooms = new Array[Room](roomRows * roomColumns)
-    private[this] val canMoveTo = new Array[Seq[Room]](roomRows * roomColumns)
+    private[this] val connected = new Array[Array[Room]](roomRows * roomColumns)
     private[this] val toRow = mod(roomRows)_
     private[this] val toCol = mod(roomColumns)_
     private[this] def indexOf(row: Int, col: Int): Int = roomColumns * toRow(row) + toCol(col)
@@ -51,23 +65,18 @@ class EpidemySimulator extends Simulator {
     }
 
     for (room <- rooms) {
-      canMoveTo(indexOf(room)) = Array(
+      connected(indexOf(room)) = Array(
         get(room.row + 1, room.col),
         get(room.row - 1, room.col),
         get(room.row, room.col + 1),
-        get(room.row, room.col - 1)) .
-        view . filter { inhabitants(_) forall { !_.visiblyInfectious } }
+        get(room.row, room.col - 1))
     }
 
     def get(row: Int, col: Int) = rooms(indexOf(row, col))
 
-    def random = rooms(randomBelow(rooms.size))
+    def getConnected(room: Room) = connected(indexOf(room))
 
-    def randomMove(room: Room) = {
-      val potential = canMoveTo(indexOf(room))
-      val size = potential.size
-      if (size == 0) None else Some(potential(randomBelow(size)))
-    }
+    def random = rooms(randomBelow(rooms.size))
   }
 
   case class Room (row: Int, col: Int)
@@ -97,12 +106,11 @@ class EpidemySimulator extends Simulator {
 
     def move() {
       if (!dead) {
-        Room.randomMove(room) match {
+        randomMove(room) match {
           case Some(moveTo) =>
             room = moveTo
-            if (!infected && inhabitants(moveTo).exists(_.infected) && random < transmissionRate) {
+            if (!infected && random < transmissionRate && inhabitants(moveTo).exists(_.infected))
               becomeInfected()
-            }
           case None =>
         }
         queueMove()
