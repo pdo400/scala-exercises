@@ -1,6 +1,7 @@
 package simulations
 
 import math.random
+import scala.annotation.tailrec
 
 class EpidemySimulator extends Simulator {
 
@@ -54,7 +55,7 @@ class EpidemySimulator extends Simulator {
 
   def randomMove(room: Room) = {
     if (airTraffic && random < airTrafficRate) {
-      Some(Room.random)
+      Some(Room.randomNot(room))
     } else {
       val potential = Room.getConnected(room) .
         view . filter { inhabitants(_) forall { !_.visiblyInfectious } }
@@ -92,6 +93,12 @@ class EpidemySimulator extends Simulator {
     def getConnected(room: Room) = connected(indexOf(room))
 
     def random = rooms(randomBelow(rooms.size))
+
+    def randomNot(room: Room) = {
+      val r = randomBelow(rooms.size - 1)
+      val i = if (r < indexOf(room)) r else r + 1
+      rooms(i)
+    }
   }
 
   case class Room (row: Int, col: Int)
